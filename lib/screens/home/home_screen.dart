@@ -10,6 +10,7 @@ import '../../widgets/common/search_bar.dart';
 import '../../widgets/common/category_filter.dart';
 import '../../widgets/common/date_filter.dart';
 import '../../providers/currency_provider.dart';
+import '../../services/pdf_services.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -80,6 +81,14 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text("Expense Tracker"),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: "Export PDF",
+            onPressed: () async {
+              await PdfService.generatePdf();
+            },
+          ),
+
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {

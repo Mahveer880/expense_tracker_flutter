@@ -23,4 +23,8 @@ class HiveService {
   ) async {
     await transactionBox.putAt(index, transaction);
   }
+
+  static Future<void> clearTransactions() async {
+    await transactionBox.clear();
+  }
 }

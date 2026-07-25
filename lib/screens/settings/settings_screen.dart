@@ -41,6 +41,28 @@ class SettingsScreen extends StatelessWidget {
 
           const Divider(),
 
+          ListTile(
+            leading: const Icon(Icons.backup),
+            title: const Text("Backup Data"),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              // Backup
+            },
+          ),
+
+          const Divider(),
+
+          ListTile(
+            leading: const Icon(Icons.restore),
+            title: const Text("Restore Data"),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+            onTap: () {
+              // Restore
+            },
+          ),
+
+          const Divider(),
+
           const ListTile(
             leading: Icon(Icons.info),
             title: Text("About"),
