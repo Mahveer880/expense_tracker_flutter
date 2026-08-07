@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import '../../providers/transaction_provider.dart';
 import '../../widgets/cards/balance_card.dart';
@@ -11,6 +12,8 @@ import '../../widgets/common/category_filter.dart';
 import '../../widgets/common/date_filter.dart';
 import '../../providers/currency_provider.dart';
 import '../../services/pdf_services.dart';
+import '../../services/auth_service.dart';
+import '../../providers/budget_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,9 +52,24 @@ final List<String> categories = [
 ];
 
 class _HomeScreenState extends State<HomeScreen> {
+  String getGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour < 12) {
+      return "Good Morning";
+    } else if (hour < 17) {
+      return "Good Afternoon";
+    } else {
+      return "Good Evening";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TransactionProvider>();
+    final budgetProvider = context.watch<BudgetProvider>();
+
+    final currentUser = AuthService.getCurrentUser();
 
     final filteredTransactions = provider.transactions.where((transaction) {
       // Search Filter
@@ -107,21 +125,81 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "👋 Good Morning",
-                style: TextStyle(fontSize: 18, color: Colors.grey),
+              Text(
+                "👋 ${getGreeting()}",
+                style: const TextStyle(fontSize: 18, color: Colors.grey),
               ),
 
               const SizedBox(height: 8),
 
-              const Text(
-                "Mahveer",
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+              Text(
+                currentUser?.name ?? "Guest",
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
 
               const SizedBox(height: 30),
 
               BalanceCard(balance: provider.balance),
+
+              const SizedBox(height: 20),
+
+              Card(
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "💰 Monthly Budget",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Text(
+                        "Budget: Rs. ${budgetProvider.budget.toStringAsFixed(0)}",
+                      ),
+
+                      Text(
+                        "Spent: Rs. ${provider.totalExpense.toStringAsFixed(0)}",
+                      ),
+
+                      Text(
+                        "Remaining: Rs. ${(budgetProvider.budget - provider.totalExpense).toStringAsFixed(0)}",
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      LinearProgressIndicator(
+                        value: budgetProvider.budget == 0
+                            ? 0
+                            : (provider.totalExpense / budgetProvider.budget)
+                                  .clamp(0.0, 1.0),
+                      ),
+
+                      if (budgetProvider.budget > 0 &&
+                          provider.totalExpense > budgetProvider.budget)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 10),
+                          child: Text(
+                            "⚠ Budget Exceeded",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 20),
 
@@ -224,24 +302,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: 15),
 
-              TextField(
-                controller: searchController,
-                decoration: InputDecoration(
-                  hintText: "Search Transactions",
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    searchText = value.toLowerCase();
-                  });
-                },
-              ),
-
-              const SizedBox(height: 15),
-
               provider.transactions.isEmpty
                   ? const Card(
                       child: ListTile(
@@ -258,93 +318,158 @@ class _HomeScreenState extends State<HomeScreen> {
                         final transaction = filteredTransactions[index];
 
                         return Card(
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              child: Icon(
-                                transaction.type == "Income"
-                                    ? Icons.arrow_downward
-                                    : Icons.arrow_upward,
-                              ),
-                            ),
-
-                            title: Text(transaction.category),
-
-                            subtitle: Text(transaction.description),
-
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
+                          elevation: 4,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
                               children: [
-                                Text(
-                                  "${context.watch<CurrencyProvider>().currency} ${transaction.amount}",
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                CircleAvatar(
+                                  radius: 25,
+                                  backgroundColor: transaction.type == "Income"
+                                      ? Colors.green.withOpacity(0.15)
+                                      : Colors.red.withOpacity(0.15),
+                                  child: Icon(
+                                    transaction.type == "Income"
+                                        ? Icons.arrow_downward
+                                        : Icons.arrow_upward,
+                                    color: transaction.type == "Income"
+                                        ? Colors.green
+                                        : Colors.red,
                                   ),
                                 ),
 
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.blue,
-                                  ),
-                                  onPressed: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            AddTransactionScreen(
-                                              transaction: transaction,
-                                              index: index,
-                                            ),
+                                const SizedBox(width: 15),
+
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        transaction.category,
+                                        style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    );
-                                  },
+
+                                      const SizedBox(height: 4),
+
+                                      Text(
+                                        transaction.description,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 6),
+
+                                      Text(
+                                        DateFormat(
+                                          "dd MMM yyyy",
+                                        ).format(transaction.date),
+                                        style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
 
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () async {
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) {
-                                        return AlertDialog(
-                                          title: const Text(
-                                            "Delete Transaction",
-                                          ),
-                                          content: const Text(
-                                            "Are you sure you want to delete this transaction?",
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context, false);
-                                              },
-                                              child: const Text("Cancel"),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context, true);
-                                              },
-                                              child: const Text(
-                                                "Delete",
-                                                style: TextStyle(
-                                                  color: Colors.red,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      "${context.watch<CurrencyProvider>().currency} ${transaction.amount.toStringAsFixed(0)}",
+                                      style: TextStyle(
+                                        color: transaction.type == "Income"
+                                            ? Colors.green
+                                            : Colors.red,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
 
-                                    if (confirm == true) {
-                                      await context
-                                          .read<TransactionProvider>()
-                                          .deleteTransaction(index);
-                                    }
-                                  },
+                                    const SizedBox(height: 8),
+
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.blue,
+                                          ),
+                                          onPressed: () async {
+                                            await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) =>
+                                                    AddTransactionScreen(
+                                                      transaction: transaction,
+                                                      index: index,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () async {
+                                            final confirm = await showDialog<bool>(
+                                              context: context,
+                                              builder: (_) => AlertDialog(
+                                                title: const Text(
+                                                  "Delete Transaction",
+                                                ),
+                                                content: const Text(
+                                                  "Are you sure you want to delete this transaction?",
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                          context,
+                                                          false,
+                                                        ),
+                                                    child: const Text("Cancel"),
+                                                  ),
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                          context,
+                                                          true,
+                                                        ),
+                                                    child: const Text(
+                                                      "Delete",
+                                                      style: TextStyle(
+                                                        color: Colors.red,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+
+                                            if (confirm == true) {
+                                              await context
+                                                  .read<TransactionProvider>()
+                                                  .deleteTransaction(index);
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

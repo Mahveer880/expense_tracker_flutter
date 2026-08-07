@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/textfields/custom_text_field.dart';
-import '../home/home_screen.dart';
+import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
+import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -29,12 +32,33 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void signUp() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> signUp() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    UserModel user = UserModel(
+      id: const Uuid().v4(),
+      name: nameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    bool success = await AuthService.register(user);
+
+    if (!mounted) return;
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Account Created Successfully")),
+      );
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Email already exists")));
     }
   }
 
@@ -89,6 +113,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     if (value == null || value.isEmpty) {
                       return "Please enter your email";
                     }
+
+                    if (!value.contains("@") || !value.contains(".")) {
+                      return "Enter a valid email";
+                    }
+
                     return null;
                   },
                 ),

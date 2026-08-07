@@ -10,6 +10,7 @@ class AppData {
     transactions = data.map((item) {
       return TransactionModel(
         id: item['id'],
+        userId: item['userId'],
         type: item['type'],
         category: item['category'],
         amount: (item['amount'] as num).toDouble(),

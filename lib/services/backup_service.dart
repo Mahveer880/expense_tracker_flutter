@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import '../models/transaction_model.dart';
+import 'package:file_picker/file_picker.dart';
 
 import 'app_data.dart';
 
@@ -22,6 +24,31 @@ class BackupService {
       await Share.shareXFiles([
         XFile(file.path),
       ], text: "Expense Tracker Backup");
+    } catch (e) {
+      print(e);
+    }
+  }
+
+  static Future<void> restoreData() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result == null) return;
+
+      final file = File(result.files.single.path!);
+
+      final jsonString = await file.readAsString();
+
+      final List<dynamic> jsonData = jsonDecode(jsonString);
+
+      final transactions = jsonData
+          .map((e) => TransactionModel.fromJson(e))
+          .toList();
+
+      await AppData.saveTransactions(transactions);
     } catch (e) {
       print(e);
     }

@@ -8,14 +8,15 @@ import 'package:provider/provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/currency_provider.dart';
+import 'providers/budget_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
   await Hive.openBox('transactions');
-
-  AppData.loadTransactions();
+  await Hive.openBox('users');
+  await Hive.openBox('session');
 
   runApp(
     MultiProvider(
@@ -23,6 +24,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => CurrencyProvider()),
+        ChangeNotifierProvider(create: (_) => BudgetProvider()),
       ],
       child: const ExpenseTrackerApp(),
     ),

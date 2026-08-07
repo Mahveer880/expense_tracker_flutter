@@ -69,6 +69,7 @@ class TransactionProvider extends ChangeNotifier {
   ) async {
     await HiveService.updateTransaction(index, {
       'id': transaction.id,
+      'userId': transaction.userId,
       'type': transaction.type,
       'category': transaction.category,
       'amount': transaction.amount,
@@ -88,6 +89,34 @@ class TransactionProvider extends ChangeNotifier {
       if (transaction.type == "Expense") {
         data[transaction.category] =
             (data[transaction.category] ?? 0) + transaction.amount;
+      }
+    }
+
+    return data;
+  }
+
+  Map<String, double> get monthlyExpenses {
+    final Map<String, double> data = {};
+
+    for (final transaction in transactions) {
+      if (transaction.type == "Expense") {
+        final month = "${transaction.date.month}/${transaction.date.year}";
+
+        data[month] = (data[month] ?? 0) + transaction.amount;
+      }
+    }
+
+    return data;
+  }
+
+  Map<String, double> get monthlyIncome {
+    final Map<String, double> data = {};
+
+    for (final transaction in transactions) {
+      if (transaction.type == "Income") {
+        final month = "${transaction.date.month}/${transaction.date.year}";
+
+        data[month] = (data[month] ?? 0) + transaction.amount;
       }
     }
 

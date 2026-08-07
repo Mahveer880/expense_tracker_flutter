@@ -1,5 +1,6 @@
 class TransactionModel {
   final String id;
+  final String userId;
   final String type;
   final String category;
   final double amount;
@@ -8,6 +9,7 @@ class TransactionModel {
 
   TransactionModel({
     required this.id,
+    required this.userId,
     required this.type,
     required this.category,
     required this.amount,
@@ -18,6 +20,7 @@ class TransactionModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'userId': userId,
       'type': type,
       'category': category,
       'amount': amount,
@@ -29,6 +32,7 @@ class TransactionModel {
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     return TransactionModel(
       id: json['id'],
+      userId: json['userId'],
       type: json['type'],
       category: json['category'],
       amount: (json['amount'] as num).toDouble(),

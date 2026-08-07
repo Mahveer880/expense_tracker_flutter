@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/textfields/custom_text_field.dart';
+import '../../services/auth_service.dart';
 import 'signup_screen.dart';
 import '../home/home_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/transaction_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,11 +29,31 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void login() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final user = await AuthService.login(
+      emailController.text.trim(),
+      passwordController.text,
+    );
+
+    if (!mounted) return;
+
+    if (user != null) {
+      // Current user ki transactions load karo
+      context.read<TransactionProvider>().loadTransactions();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Login Successful")));
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid Email or Password")),
       );
     }
   }
@@ -57,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 20),
 
                   const Text(
-                    "Expense Tracker Pro",
+                    "Expense Tracker",
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
 
@@ -76,6 +99,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       if (value == null || value.isEmpty) {
                         return "Please enter your email";
                       }
+
+                      if (!value.contains("@") || !value.contains(".")) {
+                        return "Enter a valid email";
+                      }
+
                       return null;
                     },
                   ),
@@ -130,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 15),
 
                   const Row(
                     children: [
@@ -143,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 25),
+                  const SizedBox(height: 15),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

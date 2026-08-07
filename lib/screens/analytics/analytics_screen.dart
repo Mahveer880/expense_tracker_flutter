@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../providers/transaction_provider.dart';
+import 'dart:math';
 
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
@@ -54,6 +55,83 @@ class AnalyticsScreen extends StatelessWidget {
                       radius: 70,
                     ),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            const Text(
+              "Monthly Expense Chart",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 20),
+
+            SizedBox(
+              height: 250,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+
+                  maxY: max(
+                    100,
+                    provider.monthlyExpenses.values.isEmpty
+                        ? 100
+                        : provider.monthlyExpenses.values.reduce(max) + 1000,
+                  ),
+
+                  borderData: FlBorderData(show: false),
+
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: true),
+                    ),
+
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+
+                        getTitlesWidget: (value, meta) {
+                          final months = provider.monthlyExpenses.keys.toList();
+
+                          if (value.toInt() >= months.length) {
+                            return const SizedBox();
+                          }
+
+                          return Text(months[value.toInt()].split("/")[0]);
+                        },
+                      ),
+                    ),
+                  ),
+
+                  barGroups: List.generate(provider.monthlyExpenses.length, (
+                    index,
+                  ) {
+                    final value = provider.monthlyExpenses.values.elementAt(
+                      index,
+                    );
+
+                    return BarChartGroupData(
+                      x: index,
+
+                      barRods: [
+                        BarChartRodData(
+                          toY: value,
+                          width: 20,
+                          borderRadius: BorderRadius.circular(6),
+                          color: Colors.red,
+                        ),
+                      ],
+                    );
+                  }),
                 ),
               ),
             ),

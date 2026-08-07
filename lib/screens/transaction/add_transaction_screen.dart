@@ -5,8 +5,9 @@ import '../../widgets/buttons/primary_button.dart';
 import '../../widgets/textfields/custom_text_field.dart';
 
 import '../../models/transaction_model.dart';
-
 import '../../providers/transaction_provider.dart';
+import '../../services/auth_service.dart';
+import 'package:intl/intl.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final TransactionModel? transaction;
@@ -158,6 +159,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         onPressed: () {
                           setState(() {
                             isIncome = false;
+                            selectedCategory = null;
                           });
                         },
 
@@ -176,11 +178,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
                   prefixIcon: Icons.currency_rupee,
 
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
 
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.trim().isEmpty) {
                       return "Please enter amount";
+                    }
+
+                    final amount = double.tryParse(value);
+
+                    if (amount == null) {
+                      return "Enter a valid number";
+                    }
+
+                    if (amount <= 0) {
+                      return "Amount must be greater than 0";
                     }
 
                     return null;
@@ -224,9 +238,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     side: const BorderSide(color: Colors.grey),
                   ),
                   leading: const Icon(Icons.calendar_today),
-                  title: Text(
-                    "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                  ),
+                  title: Text(DateFormat("dd MMM yyyy").format(selectedDate)),
                   trailing: const Icon(Icons.arrow_drop_down),
                   onTap: pickDate,
                 ),
@@ -236,6 +248,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   controller: descriptionController,
                   hintText: "Description",
                   prefixIcon: Icons.description,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Please enter description";
+                    }
+                    return null;
+                  },
                 ),
 
                 const SizedBox(height: 40),
@@ -247,14 +265,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
+                      final currentUser = AuthService.getCurrentUser();
+
+                      if (currentUser == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Please login first")),
+                        );
+                        return;
+                      }
+
                       final transaction = TransactionModel(
                         id:
                             widget.transaction?.id ??
                             DateTime.now().millisecondsSinceEpoch.toString(),
+
+                        userId: currentUser.id,
+
                         type: isIncome ? "Income" : "Expense",
+
                         category: selectedCategory!,
-                        amount: double.parse(amountController.text),
+
+                        amount: double.tryParse(amountController.text) ?? 0,
+
                         description: descriptionController.text,
+
                         date: selectedDate,
                       );
 
