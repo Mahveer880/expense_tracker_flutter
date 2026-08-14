@@ -1,0 +1,76 @@
+{
+  "project_info": {
+    "project_number": "1060244130822",
+    "project_id": "home-chef-80656",
+    "storage_bucket": "home-chef-80656.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060244130822:android:ab42a5387b5d6cf1f50787",
+        "android_client_info": {
+          "package_name": "com.example.expense_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1060244130822-sk3oervhkub8br09naia1ivrmvsfc6d8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.expense_tracker",
+            "certificate_hash": "742af3017b554d829104706c0355e98388fa3fa4"
+          }
+        },
+        {
+          "client_id": "1060244130822-jjm5b4vcavf5j63cssb827l5pvha5r7p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDAeo9DrbhAFBBaCAFOoroJxsNWOIN4mM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1060244130822-jjm5b4vcavf5j63cssb827l5pvha5r7p.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060244130822:android:5ccd8edfbb3fc62bf50787",
+        "android_client_info": {
+          "package_name": "com.example.flutter_home_cooked_food"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1060244130822-jjm5b4vcavf5j63cssb827l5pvha5r7p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDAeo9DrbhAFBBaCAFOoroJxsNWOIN4mM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1060244130822-jjm5b4vcavf5j63cssb827l5pvha5r7p.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

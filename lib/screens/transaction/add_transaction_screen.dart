@@ -7,6 +7,7 @@ import '../../widgets/textfields/custom_text_field.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/transaction_provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/notification_service.dart';
 import 'package:intl/intl.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -296,21 +297,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         await context
                             .read<TransactionProvider>()
                             .addTransaction(transaction);
+
+                        if (transaction.type == "Expense") {
+                          await NotificationService.showExpenseNotification(
+                            amount: transaction.amount,
+                            category: transaction.category,
+                          );
+                        } else {
+                          await NotificationService.showIncomeNotification(
+                            amount: transaction.amount,
+                            category: transaction.category,
+                          );
+                        }
                       } else {
                         await context
                             .read<TransactionProvider>()
                             .updateTransaction(widget.index!, transaction);
                       }
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            widget.transaction == null
-                                ? "Transaction Added"
-                                : "Transaction Updated",
-                          ),
-                        ),
-                      );
 
                       Navigator.pop(context);
                     }

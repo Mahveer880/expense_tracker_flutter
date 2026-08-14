@@ -6,14 +6,15 @@ import '../../providers/transaction_provider.dart';
 import '../../widgets/cards/balance_card.dart';
 import '../../widgets/cards/expense_card.dart';
 import '../transaction/add_transaction_screen.dart';
-import '../settings/settings_screen.dart';
 import '../../widgets/common/search_bar.dart';
 import '../../widgets/common/category_filter.dart';
 import '../../widgets/common/date_filter.dart';
 import '../../providers/currency_provider.dart';
 import '../../services/pdf_services.dart';
 import '../../services/auth_service.dart';
-import '../../providers/budget_provider.dart';
+import '../settings/settings_screen.dart';
+import '../analytics/analytics_screen.dart';
+import '../budget/budget_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,7 +27,6 @@ final TextEditingController searchController = TextEditingController();
 
 String searchText = "";
 String selectedCategory = "All";
-
 DateTime? startDate;
 DateTime? endDate;
 
@@ -52,6 +52,8 @@ final List<String> categories = [
 ];
 
 class _HomeScreenState extends State<HomeScreen> {
+  String selectedType = "All";
+
   String getGreeting() {
     final hour = DateTime.now().hour;
 
@@ -60,35 +62,59 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (hour < 17) {
       return "Good Afternoon";
     } else {
-      return "Good Evening";
+      return "Good night";
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TransactionProvider>();
-    final budgetProvider = context.watch<BudgetProvider>();
 
     final currentUser = AuthService.getCurrentUser();
 
     final filteredTransactions = provider.transactions.where((transaction) {
-      // Search Filter
+      // =========================
+      // SEARCH FILTER
+      // =========================
+
       final matchesSearch =
           transaction.category.toLowerCase().contains(searchText) ||
-          transaction.description.toLowerCase().contains(searchText);
+          transaction.description.toLowerCase().contains(searchText) ||
+          transaction.type.toLowerCase().contains(searchText) ||
+          transaction.amount.toString().contains(searchText);
 
-      // Category Filter
+      // =========================
+      // TYPE FILTER
+      // =========================
+
+      final matchesType =
+          selectedType == "All" || transaction.type == selectedType;
+
+      // =========================
+      // CATEGORY FILTER
+      // =========================
+
       final matchesCategory =
           selectedCategory == "All" || transaction.category == selectedCategory;
 
-      // Date Filter
+      // =========================
+      // DATE FILTER
+      // =========================
+
       final matchesStartDate =
-          startDate == null || !transaction.date.isBefore(startDate!);
+          startDate == null ||
+          !transaction.date.isBefore(
+            DateTime(startDate!.year, startDate!.month, startDate!.day),
+          );
 
       final matchesEndDate =
-          endDate == null || !transaction.date.isAfter(endDate!);
+          endDate == null ||
+          !transaction.date.isAfter(
+            DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59),
+          );
 
       return matchesSearch &&
+          matchesType &&
           matchesCategory &&
           matchesStartDate &&
           matchesEndDate;
@@ -103,16 +129,43 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: "Export PDF",
             onPressed: () async {
-              await PdfService.generatePdf();
+              await PdfService.generatePdf(
+                currency: context.read<CurrencyProvider>().currency,
+              );
             },
           ),
 
           IconButton(
-            icon: const Icon(Icons.settings),
+            icon: const Icon(Icons.analytics_outlined),
+            tooltip: "Analytics",
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                MaterialPageRoute(
+                  builder: (context) => const AnalyticsScreen(),
+                ),
+              );
+            },
+          ),
+
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_outlined),
+            tooltip: "Budget",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BudgetScreen()),
+              );
+            },
+          ),
+
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: "Settings",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
             },
           ),
@@ -146,60 +199,94 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 20),
 
-              Card(
-                elevation: 3,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "💰 Monthly Budget",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+              const SizedBox(height: 25),
 
-                      const SizedBox(height: 12),
-
-                      Text(
-                        "Budget: Rs. ${budgetProvider.budget.toStringAsFixed(0)}",
-                      ),
-
-                      Text(
-                        "Spent: Rs. ${provider.totalExpense.toStringAsFixed(0)}",
-                      ),
-
-                      Text(
-                        "Remaining: Rs. ${(budgetProvider.budget - provider.totalExpense).toStringAsFixed(0)}",
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      LinearProgressIndicator(
-                        value: budgetProvider.budget == 0
-                            ? 0
-                            : (provider.totalExpense / budgetProvider.budget)
-                                  .clamp(0.0, 1.0),
-                      ),
-
-                      if (budgetProvider.budget > 0 &&
-                          provider.totalExpense > budgetProvider.budget)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 10),
-                          child: Text(
-                            "⚠ Budget Exceeded",
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  Expanded(
+                    child: Card(
+                      elevation: 3,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(15),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AnalyticsScreen(),
                             ),
+                          );
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(18),
+                          child: Column(
+                            children: [
+                              Icon(Icons.analytics_rounded, size: 40),
+                              SizedBox(height: 10),
+                              Text(
+                                "Analytics",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                "View spending",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
                           ),
                         ),
-                    ],
+                      ),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(width: 15),
+
+                  Expanded(
+                    child: Card(
+                      elevation: 3,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(15),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BudgetScreen(),
+                            ),
+                          );
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.all(18),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.account_balance_wallet_rounded,
+                                size: 40,
+                              ),
+                              SizedBox(height: 10),
+                              Text(
+                                "Budget",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              Text(
+                                "Manage budget",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+
+              const SizedBox(height: 25),
 
               const SizedBox(height: 20),
 
@@ -253,6 +340,48 @@ class _HomeScreenState extends State<HomeScreen> {
 
               Row(
                 children: [
+                  const Text(
+                    "Type:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: "All", child: Text("All")),
+                        DropdownMenuItem(
+                          value: "Income",
+                          child: Text("Income"),
+                        ),
+                        DropdownMenuItem(
+                          value: "Expense",
+                          child: Text("Expense"),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedType = value ?? "All";
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 15),
+
+              Row(
+                children: [
                   DateFilter(
                     title: "Start Date",
                     selectedDate: startDate,
@@ -295,6 +424,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
 
+              const SizedBox(height: 15),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      searchController.clear();
+                      searchText = "";
+                      selectedCategory = "All";
+                      selectedType = "All";
+                      startDate = null;
+                      endDate = null;
+                    });
+                  },
+                  icon: const Icon(Icons.clear_all),
+                  label: const Text("Clear Filters"),
+                ),
+              ),
+
               const SizedBox(height: 20),
               const Text(
                 "Recent Transactions",
@@ -316,6 +464,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       itemCount: filteredTransactions.length,
                       itemBuilder: (context, index) {
                         final transaction = filteredTransactions[index];
+
+                        final originalIndex = provider.transactions.indexWhere(
+                          (t) => t.id == transaction.id,
+                        );
 
                         return Card(
                           elevation: 4,
@@ -412,7 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 builder: (_) =>
                                                     AddTransactionScreen(
                                                       transaction: transaction,
-                                                      index: index,
+                                                      index: originalIndex,
                                                     ),
                                               ),
                                             );
@@ -460,10 +612,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                             );
 
-                                            if (confirm == true) {
+                                            if (confirm == true &&
+                                                originalIndex != -1) {
                                               await context
                                                   .read<TransactionProvider>()
-                                                  .deleteTransaction(index);
+                                                  .deleteTransaction(
+                                                    originalIndex,
+                                                  );
                                             }
                                           },
                                         ),
